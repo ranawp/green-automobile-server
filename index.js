@@ -23,6 +23,7 @@ async function run() {
         const productCollection = client.db('manufecture').collection('products');
         const userCollection = client.db('manufecture').collection('users');
         const bookingCollection = client.db('manufecture').collection('bookings');
+        const reviewCollection = client.db('manufecture').collection('reviews');
 
         app.get('/product', async (req, res) => {
             const query = {};
@@ -81,6 +82,19 @@ async function run() {
             const cursor = bookingCollection.find(query);
             const products = await cursor.toArray();
             res.send(products)
+        })
+
+        app.post('/reviews', async (req, res) => {
+            const newReviews = req.body;
+            const reviews = await reviewCollection.insertOne(newReviews)
+            res.send(reviews)
+        })
+
+        app.get('/reviews', async (req, res) => {
+            const query = {};
+            const cursor = reviewCollection.find(query);
+            const reviews = await cursor.toArray();
+            res.send(reviews)
         })
 
 
