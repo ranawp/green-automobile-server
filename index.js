@@ -1,6 +1,8 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
+var jwt = require('jsonwebtoken');
+
 require('dotenv').config()
 const port = process.env.PORT || 5000
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -20,6 +22,7 @@ async function run() {
         await client.connect();
         const productCollection = client.db('manufecture').collection('products');
         const userCollection = client.db('manufecture').collection('users');
+        const bookingCollection = client.db('manufecture').collection('bookings');
 
         app.get('/product', async (req, res) => {
             const query = {};
@@ -37,7 +40,8 @@ async function run() {
                 $set: user,
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
-            res.send(result)
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1hr' })
+            res.send({ result, token })
 
         })
 
@@ -64,6 +68,19 @@ async function run() {
             const query = { _id: ObjectId(id) };
             const result = await productCollection.deleteOne(query);
             res.send(result)
+        })
+
+        app.post('/bookings', async (req, res) => {
+            const newBoonkings = req.body;
+            const products = await bookingCollection.insertOne(newBoonkings)
+            res.send(products)
+        })
+
+        app.get('/bookings', async (req, res) => {
+            const query = {};
+            const cursor = bookingCollection.find(query);
+            const products = await cursor.toArray();
+            res.send(products)
         })
 
 
