@@ -25,6 +25,23 @@ async function run() {
         const bookingCollection = client.db('manufecture').collection('bookings');
         const reviewCollection = client.db('manufecture').collection('reviews');
 
+
+        // function verifyJWT(req, res, next) {
+        //     console.log('verifyJwt')
+        //     const authHeader = req.headers.authorization;
+        //     if (!authHeader) {
+        //         return res.status(401).send({ message: 'UnAuthorized access' })
+        //     }
+        //     const token=authHeader.split(' ')[1]; 
+        //     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded) {
+        //        if(err){
+        //            return res.status(403).send({message:'Forbidden  access'})
+        //         } 
+        //         req.decoded=decoded; 
+        //         next(); 
+        //       });
+
+        // }
         app.get('/product', async (req, res) => {
             const query = {};
             const cursor = productCollection.find(query);
@@ -45,6 +62,13 @@ async function run() {
             res.send({ result, token })
 
         })
+        app.get('/users', async (req, res) => {
+            const query = {};
+            const cursor = userCollection.find(query);
+            const users = await cursor.toArray();
+            res.send(users)
+        })
+
 
         app.get('/product/:id', async (req, res) => {
             const id = req.params.id;
@@ -52,11 +76,7 @@ async function run() {
             const product = await productCollection.findOne(query);
             res.send(product)
         })
-        // app.post('/product', async (req, res) => {
-        //     const newProduct = req.body;
-        //     const result = await productCollection.insertOne(newInventory)
-        //     res.send(result);
-        // })
+
 
         app.post('/product', async (req, res) => {
             const newProduct = req.body;
@@ -79,6 +99,7 @@ async function run() {
 
         app.get('/bookings', async (req, res) => {
             const query = {};
+            // console.log('auth header', authorization) //new 
             const cursor = bookingCollection.find(query);
             const products = await cursor.toArray();
             res.send(products)
