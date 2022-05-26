@@ -17,6 +17,23 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xywq3.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyJWT(req, res, next) {
+    console.log('jwt token')
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).send({ message: 'Unathurized access' })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'Forbidden access' })
+        }
+        req.decoded = decoded
+        next()
+    });
+}
+
 async function run() {
     try {
         await client.connect();
@@ -26,22 +43,7 @@ async function run() {
         const reviewCollection = client.db('manufecture').collection('reviews');
 
 
-        // function verifyJWT(req, res, next) {
-        //     console.log('verifyJwt')
-        //     const authHeader = req.headers.authorization;
-        //     if (!authHeader) {
-        //         return res.status(401).send({ message: 'UnAuthorized access' })
-        //     }
-        //     const token=authHeader.split(' ')[1]; 
-        //     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded) {
-        //        if(err){
-        //            return res.status(403).send({message:'Forbidden  access'})
-        //         } 
-        //         req.decoded=decoded; 
-        //         next(); 
-        //       });
 
-        // }
         app.get('/product', async (req, res) => {
             const query = {};
             const cursor = productCollection.find(query);
@@ -49,7 +51,23 @@ async function run() {
             res.send(products)
         });
 
-        app.put('/user/:email', async (req, res) => {
+
+
+        //make  admin api  
+        app.put('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email }
+            const updateDoc = {
+                $set: { role: 'admin' },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+
+            res.send(result)
+
+        })
+
+
+        app.put('/users/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body;
             const filter = { email: email }
@@ -62,6 +80,8 @@ async function run() {
             res.send({ result, token })
 
         })
+
+        //get all user 
         app.get('/users', async (req, res) => {
             const query = {};
             const cursor = userCollection.find(query);
@@ -93,13 +113,33 @@ async function run() {
 
         app.post('/bookings', async (req, res) => {
             const newBoonkings = req.body;
+
             const products = await bookingCollection.insertOne(newBoonkings)
             res.send(products)
         })
 
+        // app.get('/bookings', verifyJWT, async (req, res) => {
+        //     const user = req.query.email;
+        //     const decodedEmail = req.decoded.email;
+        //     if (user === decodedEmail) {
+        //         const query = { user: user };
+        //         const cursor = bookingCollection.find(query);
+        //         const products = await cursor.toArray();
+        //         res.send(products)
+        //     }
+        //     else {
+        //         return res.status(403).send({ message: 'forbidden acces' })
+        //     }
+
+        //     // const authorization = req.headers.authorization;
+        //     // console.log('auth header', authorization)
+
+        // })
+        //backup 
         app.get('/bookings', async (req, res) => {
+
             const query = {};
-            // console.log('auth header', authorization) //new 
+
             const cursor = bookingCollection.find(query);
             const products = await cursor.toArray();
             res.send(products)
